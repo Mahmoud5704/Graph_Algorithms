@@ -97,39 +97,63 @@ def parse_weighted_edges(text, placeholder):
 
 
 def prim_mst_logic(text, placeholder):
-
-    edges, err, ok = parse_weighted_edges(text, placeholder)
-    if ok != 1:
-        return err, "error"
+    
+    # Check the entered text if it matches the format
+    # if not return error
+    edges, error_description, status = parse_weighted_edges(text, placeholder)
+    if status != 1:
+        return error_description, "error"
+    
+    # create adjacency list as a python dict
+    # insert vertices in set
     adj = defaultdict(list)
     nodes = set()
-    for u, v, w in edges:
-        nodes.add(u)
-        nodes.add(v)
-        adj[u].append((v, w))
-        adj[v].append((u, w))
+    
+    # add to dictionary where every vertex has the other attached vertex with weight
+    for first_vertex,second_vertex, weight in edges:
+        nodes.add(first_vertex)
+        nodes.add(second_vertex)
+        adj[first_vertex].append((second_vertex, weight))
+        adj[second_vertex].append((first_vertex, weight))
+    
+    # min weighted edge will be use its vertex as the source
     min_edge = min(edges, key=lambda e: e[2])
     source = min_edge[0]
+    
+    # create set for visited vertices
+    # mst_edges appends tuples of u<v:w
     visited = set()
     mst_edges = []
     total_weight = 0
+    # empty list, will be used as min‑heap
     heap = []
     visited.add(source)
-    for neighbor, w in adj[source]:
-        heapq.heappush(heap, (w, source, neighbor))
+    for neighbor, weight in adj[source]:
+        # push edges with weight first
+        heapq.heappush(heap, (weight, source, neighbor))
+    # continue as long as not all nodes covered and heap not empty
     while heap and len(visited) < len(nodes):
-        w, u, v = heapq.heappop(heap)
-        if v in visited:
-            continue
+        weight, u, v = heapq.heappop(heap)
+    
+        if v in visited: # already connected in prim's algorithm graph diagram
+            continue     # no need to iterate over it again
+        
+        # add the newly visited vertex to the MST set
         visited.add(v)
-        mst_edges.append((u, v, w))
-        total_weight += w
+        # record the edge that was added to the MST (u is already in MST, v is new)
+        mst_edges.append((u, v, weight))  
+        total_weight += weight 
         for nxt, w2 in adj[v]:
+            # after adding v, examine all its outgoing edges to find new candidates
             if nxt not in visited:
+                # if the neighbor is not yet in the MST, push this edge onto the heap
                 heapq.heappush(heap, (w2, v, nxt))
+                
     if len(visited) != len(nodes):
         return "Graph is not connected.", "error"
+    
     result = "Prim MST\n\n"
+    
     for u, v, w in mst_edges:
         result += f"{u} -- {v} : {w}\n"
     result += f"\nTotal Weight = {total_weight}"
